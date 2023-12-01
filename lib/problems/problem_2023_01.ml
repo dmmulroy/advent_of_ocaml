@@ -74,7 +74,7 @@ module Part_2 = struct
       raw_value |> Utils.string_to_char_list
       |> List.fold_left
            (fun { value; index; resume_index } char ->
-             if index <> resume_index then
+             if index != resume_index then
                { value; index = index + 1; resume_index }
              else
                let parsed_char =
@@ -91,15 +91,14 @@ module Part_2 = struct
                | None ->
                    String.sub raw_value index (String.length raw_value - index)
                    |> Utils.string_to_char_list |> int_of_chars
-                   |> Option.map string_of_int
                    |> Option.fold
                         ~none:
                           { value; index = index + 1; resume_index = index + 1 }
-                        ~some:(fun (parsed : string) ->
+                        ~some:(fun (parsed : int) ->
                           {
-                            value = value ^ parsed;
+                            value = value ^ string_of_int parsed;
                             index = index + 1;
-                            resume_index = int_to_word_length index + index;
+                            resume_index = int_to_word_length parsed + index;
                           }))
            { value = ""; index = 0; resume_index = 0 }
     in
