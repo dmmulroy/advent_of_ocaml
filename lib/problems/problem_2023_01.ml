@@ -55,7 +55,7 @@ module Part_2 = struct
     | _ -> failwith "Invalid number"
   ;;
 
-  type acc = {
+  type accumulator = {
     initial : string;
     value : string;
     index : int;
