@@ -1,33 +1,21 @@
 let year = 2023
 let day = 1
 
-(* module Utils = struct
-     let split_lines input = input |> String.trim |> String.split_on_char '\n'
-     let print_string_list list = Fmt.pr "%a\n" (Fmt.Dump.list Fmt.string) list
-     let print_char_list list = Fmt.pr "%a\n" (Fmt.Dump.list Fmt.char) list
-     let string_to_char_list str = str |> String.to_seq |> List.of_seq
-   end *)
+let parse_first_and_last_digit value =
+  let value_length = String.length value in
+  let first_digit = String.get value 0 |> Char.escaped in
+  let last_digit = String.get value (value_length - 1) |> Char.escaped in
+  first_digit ^ last_digit |> int_of_string
+;;
 
 module Part_1 = struct
+  let reduce_char_list acc char =
+    Char.escaped char |> int_of_string_opt |> Option.map string_of_int
+    |> Option.fold ~none:acc ~some:(String.cat acc)
+  ;;
+
   let parse_calibration_value (value : string) =
-    let parsed_value =
-      String.fold_left
-        (fun acc char ->
-          let partial_value =
-            char |> Char.escaped |> int_of_string_opt
-            |> Option.map string_of_int
-          in
-          match partial_value with
-          | None -> acc
-          | Some partial_value -> acc ^ partial_value)
-        "" value
-    in
-    let parsed_value_length = String.length parsed_value in
-    let first_digit = String.get parsed_value 0 |> Char.escaped in
-    let last_digit =
-      String.get parsed_value (parsed_value_length - 1) |> Char.escaped
-    in
-    first_digit ^ last_digit |> int_of_string
+    String.fold_left reduce_char_list "" value |> parse_first_and_last_digit
   ;;
 
   let run (input : string) : (string, string) result =
