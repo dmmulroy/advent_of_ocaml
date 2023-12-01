@@ -32,6 +32,9 @@ module Part_1 = struct
 
   let run (input : string) : (string, string) result =
     input |> Utils.split_lines
+    |> (fun list ->
+         let () = Fmt.pr "length: %d\n" (List.length list) in
+         list)
     |> List.fold_left
          (fun acc raw_calibration_value ->
            acc + parse_calibration_value raw_calibration_value)
@@ -67,40 +70,41 @@ module Part_2 = struct
     | _ -> failwith "Invalid number"
   ;;
 
-  type acc = { value : string; index : int; resume_index : int }
+  type acc = { value : string; index : int; digit_resume_index : int }
 
   let parse_calibration_value (raw_value : string) =
     let { value; _ } =
       raw_value |> Utils.string_to_char_list
       |> List.fold_left
-           (fun { value; index; resume_index } char ->
-             if index != resume_index then
-               { value; index = index + 1; resume_index }
-             else
-               let parsed_char =
-                 char |> Char.escaped |> int_of_string_opt
-                 |> Option.map string_of_int
-               in
-               match parsed_char with
-               | Some parsed_char ->
-                   {
-                     value = value ^ parsed_char;
-                     index = index + 1;
-                     resume_index = index + 1;
-                   }
-               | None ->
-                   String.sub raw_value index (String.length raw_value - index)
-                   |> Utils.string_to_char_list |> int_of_chars
-                   |> Option.fold
-                        ~none:
-                          { value; index = index + 1; resume_index = index + 1 }
-                        ~some:(fun (parsed : int) ->
-                          {
-                            value = value ^ string_of_int parsed;
-                            index = index + 1;
-                            resume_index = int_to_word_length parsed + index;
-                          }))
-           { value = ""; index = 0; resume_index = 0 }
+           (fun { value; index; digit_resume_index } char ->
+             let parsed_char =
+               char |> Char.escaped |> int_of_string_opt
+               |> Option.map string_of_int
+             in
+             match (parsed_char, index = digit_resume_index) with
+             | Some parsed_char, true ->
+                 {
+                   value = value ^ parsed_char;
+                   index = index + 1;
+                   digit_resume_index = index + 1;
+                 }
+             | _ ->
+                 String.sub raw_value index (String.length raw_value - index)
+                 |> Utils.string_to_char_list |> int_of_chars
+                 |> Option.fold
+                      ~none:
+                        {
+                          value;
+                          index = index + 1;
+                          digit_resume_index = index + 1;
+                        }
+                      ~some:(fun (parsed : int) ->
+                        {
+                          value = value ^ string_of_int parsed;
+                          index = index + 1;
+                          digit_resume_index = int_to_word_length parsed + index;
+                        }))
+           { value = ""; index = 0; digit_resume_index = 0 }
     in
     (* Fmt.pr "%s, %s\n" raw_value value; *)
     let value_length = String.length value in
