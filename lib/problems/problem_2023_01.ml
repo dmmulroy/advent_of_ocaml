@@ -102,13 +102,23 @@ module Part_2 = struct
                           }))
            { value = ""; index = 0; resume_index = 0 }
     in
+    (* Fmt.pr "%s, %s\n" raw_value value; *)
     let value_length = String.length value in
     let first_digit = String.get value 0 |> Char.escaped in
-    let last_digit = String.get value (value_length - 1) |> Char.escaped in
-    first_digit ^ last_digit |> int_of_string
+    let result =
+      if value_length = 1 then int_of_string first_digit
+      else
+        let last_digit = String.get value (value_length - 1) |> Char.escaped in
+        let result = first_digit ^ last_digit |> int_of_string in
+        (* Fmt.pr "%s -> %s -> %d\n" raw_value value result; *)
+        result
+    in
+    Fmt.pr "%s -> %s -> %d\n" raw_value value result;
+    result
   ;;
 
   let run (input : string) : (string, string) result =
+    print_endline "";
     input |> Utils.split_lines
     |> List.fold_left
          (fun acc raw_calibration_value ->
