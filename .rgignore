@@ -1,0 +1,6 @@
+_build/
+_opam/
+.sl/
+.git/
+.DS_Store
+.envrc

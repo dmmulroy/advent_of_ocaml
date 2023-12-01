@@ -1,0 +1,12 @@
+(rule
+ (target all.ml)
+ (deps
+  (:problem_files
+   (glob_files "./problem*{[!r][!e].ml,.re}"))
+  (:generator generator/gen.exe))
+ (action
+  (run %{generator} %{target} %{problem_files})))
+
+(library
+ (name problems)
+ (libraries problem import))
