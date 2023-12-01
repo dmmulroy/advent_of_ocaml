@@ -9,4 +9,4 @@
 
 (library
  (name problems)
- (libraries problem import))
+ (libraries problem import utils))

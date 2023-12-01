@@ -1,12 +1,12 @@
 let year = 2023
 let day = 1
 
-module Utils = struct
-  let split_lines input = input |> String.trim |> String.split_on_char '\n'
-  let print_string_list list = Fmt.pr "%a\n" (Fmt.Dump.list Fmt.string) list
-  let print_char_list list = Fmt.pr "%a\n" (Fmt.Dump.list Fmt.char) list
-  let string_to_char_list str = str |> String.to_seq |> List.of_seq
-end
+(* module Utils = struct
+     let split_lines input = input |> String.trim |> String.split_on_char '\n'
+     let print_string_list list = Fmt.pr "%a\n" (Fmt.Dump.list Fmt.string) list
+     let print_char_list list = Fmt.pr "%a\n" (Fmt.Dump.list Fmt.char) list
+     let string_to_char_list str = str |> String.to_seq |> List.of_seq
+   end *)
 
 module Part_1 = struct
   let parse_calibration_value (value : string) =
@@ -31,10 +31,7 @@ module Part_1 = struct
   ;;
 
   let run (input : string) : (string, string) result =
-    input |> Utils.split_lines
-    |> (fun list ->
-         let () = Fmt.pr "length: %d\n" (List.length list) in
-         list)
+    Utils.split_lines input
     |> List.fold_left
          (fun acc raw_calibration_value ->
            acc + parse_calibration_value raw_calibration_value)
@@ -44,7 +41,7 @@ module Part_1 = struct
 end
 
 module Part_2 = struct
-  let int_of_chars = function
+  let int_of_char_list = function
     | 'o' :: 'n' :: 'e' :: _ -> Some 1
     | 't' :: 'w' :: 'o' :: _ -> Some 2
     | 't' :: 'h' :: 'r' :: 'e' :: 'e' :: _ -> Some 3
@@ -70,60 +67,73 @@ module Part_2 = struct
     | _ -> failwith "Invalid number"
   ;;
 
-  type acc = { value : string; index : int; digit_resume_index : int }
+  type acc = {
+    initial : string;
+    value : string;
+    index : int;
+    digit_resume_index : int;
+  }
 
-  let parse_calibration_value (raw_value : string) =
-    let { value; _ } =
-      raw_value |> Utils.string_to_char_list
-      |> List.fold_left
-           (fun { value; index; digit_resume_index } char ->
-             let parsed_char =
-               char |> Char.escaped |> int_of_string_opt
-               |> Option.map string_of_int
-             in
-             match (parsed_char, index = digit_resume_index) with
-             | Some parsed_char, true ->
-                 {
-                   value = value ^ parsed_char;
-                   index = index + 1;
-                   digit_resume_index = index + 1;
-                 }
-             | _ ->
-                 String.sub raw_value index (String.length raw_value - index)
-                 |> Utils.string_to_char_list |> int_of_chars
-                 |> Option.fold
-                      ~none:
-                        {
-                          value;
-                          index = index + 1;
-                          digit_resume_index = index + 1;
-                        }
-                      ~some:(fun (parsed : int) ->
-                        {
-                          value = value ^ string_of_int parsed;
-                          index = index + 1;
-                          digit_resume_index = int_to_word_length parsed + index;
-                        }))
-           { value = ""; index = 0; digit_resume_index = 0 }
-    in
-    (* Fmt.pr "%s, %s\n" raw_value value; *)
+  let parse_char char =
+    char |> Char.escaped |> int_of_string_opt |> Option.map string_of_int
+  ;;
+
+  let is_digit char = char |> parse_char |> Option.is_some
+
+  let parse_first_and_last_digit value =
     let value_length = String.length value in
     let first_digit = String.get value 0 |> Char.escaped in
-    let result =
-      if value_length = 1 then int_of_string first_digit
-      else
-        let last_digit = String.get value (value_length - 1) |> Char.escaped in
-        let result = first_digit ^ last_digit |> int_of_string in
-        (* Fmt.pr "%s -> %s -> %d\n" raw_value value result; *)
-        result
-    in
-    Fmt.pr "%s -> %s -> %d\n" raw_value value result;
-    result
+    let last_digit = String.get value (value_length - 1) |> Char.escaped in
+    first_digit ^ last_digit |> int_of_string
+  ;;
+
+  let get_remaining_characters index str =
+    String.sub str index (String.length str - index)
+    |> Utils.string_to_char_list
+  ;;
+
+  let reduce_char_list acc char =
+    if acc.index = acc.digit_resume_index && is_digit char then
+      {
+        acc with
+        value = acc.value ^ Char.escaped char;
+        index = acc.index + 1;
+        digit_resume_index = acc.index + 1;
+      }
+    else
+      let parsed_int_opt =
+        get_remaining_characters acc.index acc.initial |> int_of_char_list
+      in
+      match parsed_int_opt with
+      | None ->
+          let next_digit_resume_index =
+            if acc.index = acc.digit_resume_index then acc.index + 1
+            else acc.digit_resume_index
+          in
+          {
+            acc with
+            value = acc.value;
+            index = acc.index + 1;
+            digit_resume_index = next_digit_resume_index;
+          }
+      | Some parsed_int ->
+          {
+            acc with
+            value = acc.value ^ string_of_int parsed_int;
+            index = acc.index + 1;
+            digit_resume_index = acc.index + int_to_word_length parsed_int;
+          }
+  ;;
+
+  let parse_calibration_value (raw_value : string) =
+    Utils.string_to_char_list raw_value
+    |> List.fold_left reduce_char_list
+         { initial = raw_value; value = ""; index = 0; digit_resume_index = 0 }
+    |> fun { value; _ } -> parse_first_and_last_digit value
   ;;
 
   let run (input : string) : (string, string) result =
-    print_endline "";
-    input |> Utils.split_lines
+    Utils.split_lines input
     |> List.fold_left
          (fun acc raw_calibration_value ->
            acc + parse_calibration_value raw_calibration_value)

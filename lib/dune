@@ -12,3 +12,8 @@
 (library
  (name problem)
  (modules problem))
+
+(library
+ (name utils)
+ (modules utils)
+ (libraries fmt))
