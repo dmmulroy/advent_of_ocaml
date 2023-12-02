@@ -7,6 +7,7 @@ module Credentials = struct
 
   let to_headers (t : t) : (string * string) list =
     [ ("Cookie", "session=" ^ t) ]
+  ;;
 end
 
 module Run_mode = struct
@@ -19,11 +20,13 @@ module Run_mode = struct
     let s = really_input_string ch (in_channel_length ch) in
     close_in ch;
     s
+  ;;
 
   let write_file (filename : string) (contents : string) : unit =
     let ch = open_out_bin filename in
     let () = output_string ch contents in
     close_out ch
+  ;;
 
   let get_puzzle_input (year : int) (day : int)
       (credentials : Credentials.t option) : (string, string) result =
@@ -37,9 +40,7 @@ module Run_mode = struct
     in
 
     (* Check if cached input exists *)
-    let filename =
-      Filename.concat year_dir @@ Format.sprintf "%02d.txt" day
-    in
+    let filename = Filename.concat year_dir @@ Format.sprintf "%02d.txt" day in
     if Sys.file_exists filename then Ok (read_file filename)
       (* If not, fetch it from adventofcode.com *)
     else
@@ -66,12 +67,14 @@ module Run_mode = struct
           let* body = Piaf.Body.to_string response.body in
           write_file filename body;
           Lwt_result.return body
+  ;;
 
   let get_input (year : int) (day : int) : t -> (string, string) result =
     function
     | Test_from_puzzle_input { credentials } ->
         get_puzzle_input year day credentials
     | Submit { credentials } -> get_puzzle_input year day (Some credentials)
+  ;;
 
   let cleanup (year : int) (day : int) (part : int) (output : string)
       (run_mode : t) : (string option, string) result =
@@ -102,6 +105,7 @@ module Run_mode = struct
         let* response = Piaf.Client.Oneshot.post ~headers ~body uri in
         let* body = Piaf.Body.to_string response.body in
         Lwt_result.return (Some body)
+  ;;
 end
 
 module Options = struct
@@ -110,7 +114,7 @@ end
 
 let run_problem (module Problem : Problem.T) (run_mode : Run_mode.t)
     (year : int) (day : int) (part : int) : (string, string) result =
-  let@ input = Run_mode.get_input year day run_mode in
+  let@ input = Run_mode.get_input year day run_mode |> Result.map String.trim in
   let@ result =
     match part with
     | 1 -> Problem.Part_1.run input
@@ -122,9 +126,10 @@ let run_problem (module Problem : Problem.T) (run_mode : Run_mode.t)
     match cleanup_result with None -> () | Some result -> print_endline result
   in
   Ok result
+;;
 
-let find_problem (year : int) (day : int) :
-    ((module Problem.T), string) result =
+let find_problem (year : int) (day : int) : ((module Problem.T), string) result
+    =
   match
     List.find_opt
       (fun (module Problem : Problem.T) ->
@@ -134,9 +139,11 @@ let find_problem (year : int) (day : int) :
   | Some p -> Ok p
   | None ->
       Error
-        (Format.sprintf "Problem (year = %d, day = %d) not implemented."
-           year day)
+        (Format.sprintf "Problem (year = %d, day = %d) not implemented." year
+           day)
+;;
 
 let run (options : Options.t) : (string, string) result =
   let@ problem = find_problem options.year options.day in
   run_problem problem options.run_mode options.year options.day options.part
+;;
