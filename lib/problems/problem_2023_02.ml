@@ -84,12 +84,7 @@ module Part_1 = struct
     ;;
 
     let games = sep_by1 (char '\n') game
-
-    let parse input =
-      match Angstrom.parse_string ~consume:All games input with
-      | Ok games -> Ok games
-      | Error msg -> Error msg
-    ;;
+    let parse input = Angstrom.parse_string ~consume:All games input
   end
 
   let color_count_exceeds_limit ({ color; count } : Color_count.t) =
